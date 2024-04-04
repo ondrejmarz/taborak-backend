@@ -29,8 +29,8 @@ public class TourService {
         return tourRepository.save(tour).block();
     }
 
-    public Void deleteTour(Tour tour) {
-        return tourRepository.delete(tour).block();
+    public void deleteTour(Tour tour) {
+        tourRepository.delete(tour).block();
     }
 
     public Boolean existsTourById(String id) {

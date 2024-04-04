@@ -3,8 +3,8 @@ package cz.ondrejmarz.taborakserver.model;
 import com.google.cloud.firestore.annotation.DocumentId;
 import com.google.cloud.spring.data.firestore.Document;
 
-import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 @Document(collectionName = "tours")
@@ -17,6 +17,8 @@ public class Tour {
     private String description;
     private Date startDate;
     private Date endDate;
+    private List<String> members;
+    private List<String> applications;
 
     public Tour() {
     }
@@ -28,13 +30,15 @@ public class Tour {
         this.description = description;
     }
 
-    public Tour(String tourId, String title, String topic, String description, Date startDate, Date endDate) {
+    public Tour(String tourId, String title, String topic, String description, Date startDate, Date endDate, List<String> members, List<String> applications) {
         this.tourId = tourId;
         this.title = title;
         this.topic = topic;
         this.description = description;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.members = members;
+        this.applications = applications;
     }
 
     public String getTourId() {
@@ -84,6 +88,22 @@ public class Tour {
     public void setEndTime(Date endDate) {
         this.endDate = endDate;
     }
+
+    public List<String> getMembers() { return members; }
+
+    public void setMembers(List<String> members) { this.members = members; }
+
+    public void addMember(String member) { members.add(member); }
+
+    public void deleteMember(String member) { members.remove(member); }
+
+    public List<String> getApplications() { return applications; }
+
+    public void setApplications(List<String> applications) { this.applications = applications; }
+
+    public void addApplication(String application) { applications.add(application); }
+
+    public void deleteApplication(String application) { applications.remove(application); }
 
     @Override
     public String toString() {
