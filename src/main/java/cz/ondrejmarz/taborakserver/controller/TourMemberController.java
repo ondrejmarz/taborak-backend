@@ -12,10 +12,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
+/**
+ * The TourMemberController class handles requests related to tour members.
+ * It provides endpoints for retrieving, creating, updating, and deleting tour members,
+ * as well as setting and retrieving tour member roles.
+ */
 @RestController
-@RequestMapping("/tours")
-public class TourController {
+@RequestMapping("/tours/{tourId}/members")
+public class TourMemberController {
 
     @Autowired
     private AuthTokenFirebaseValidator authTokenValidator;
@@ -26,54 +32,14 @@ public class TourController {
     @Autowired
     private UserService userService;
 
-    @GetMapping
-    public ResponseEntity<List<Tour>> getAllTours() {
-        List<Tour> tours = tourService.getAllTours();
-        return new ResponseEntity<>(tours, HttpStatus.OK);
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Tour> getTourById(@PathVariable String id) {
-        if (tourService.existsTourById(id)) {
-            Tour tour = tourService.getTourById(id);
-            return new ResponseEntity<>(tour, HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-
-    @PostMapping
-    public ResponseEntity<Tour> createTour(@RequestBody Tour tour) {
-        Tour createdTour = tourService.saveTour(tour);
-        return new ResponseEntity<>(createdTour, HttpStatus.CREATED);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Tour> updateTour(@PathVariable String id, @RequestBody Tour tour) {
-        if (tourService.existsTourById(id)) {
-            Tour updatedTour = tourService.saveTour(tour);
-            return new ResponseEntity<>(updatedTour, HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTour(@PathVariable String id) {
-        if (tourService.existsTourById(id)) {
-            tourService.deleteTour(tourService.getTourById(id));
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-
-
-
     /**
+     * Retrieves all members of the specified tour.
      *
-     * Members of tour
-     *
-     **/
-
-    @GetMapping("/{tourId}/members")
+     * @param tourId     The ID of the tour for which to retrieve members.
+     * @param authHeader The authorization token in the request header.
+     * @return A ResponseEntity containing a list of TourUser objects representing tour members.
+     */
+    @GetMapping
     public ResponseEntity<List<TourUser>> getAllTourMembers(
             @PathVariable String tourId,
             @RequestHeader("Authorization") String authHeader
@@ -91,20 +57,43 @@ public class TourController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @GetMapping("/{tourId}/members/{userId}")
-    public ResponseEntity<String> getUserTourRole(@PathVariable String tourId, @PathVariable String userId) {
+    /**
+     * Retrieves the role of a specific user within the specified tour.
+     *
+     * @param tourId     The ID of the tour from which to retrieve the user's role.
+     * @param userId     The ID of the user whose role is to be retrieved.
+     * @param authHeader The authorization token in the request header.
+     * @return A ResponseEntity containing the role of the user within the tour.
+     */
+    @GetMapping("/{userId}/role")
+    public ResponseEntity<String> getUserTourRole(
+            @PathVariable String tourId,
+            @PathVariable String userId,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        if (!authTokenValidator.validateTokenForUID(authHeader).equals(userId))
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+
         if (tourService.existsTourById(tourId)) {
             if (userService.existsUserById(userId)) {
                 String userTourRole =
                         userService.getUserById(userId).getRoles().get(tourId) == null ?
-                        userService.getUserById(userId).getRoles().get(tourId) : "guest";
+                        userService.getUserById(userId).getRoles().get(tourId) : "null";
                 return new ResponseEntity<>(userTourRole, HttpStatus.OK);
             }
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @PutMapping("/{tourId}/members/{userId}")
+    /**
+     * Adds a user to the specified tour as a member.
+     *
+     * @param tourId     The ID of the tour to which the user is added as a member.
+     * @param userId     The ID of the user to be added as a member.
+     * @param authHeader The authorization token in the request header.
+     * @return A ResponseEntity containing the updated Tour object after adding the user as a member.
+     */
+    @PutMapping("/{userId}")
     public ResponseEntity<Tour> createTourMember(
             @PathVariable String tourId,
             @PathVariable String userId,
@@ -125,11 +114,15 @@ public class TourController {
     }
 
     /**
+     * Sets the role of a user within the specified tour.
      *
-     * Sets role of user in tour
-     *
+     * @param tourId     The ID of the tour in which to set the user's role.
+     * @param userId     The ID of the user whose role is to be set.
+     * @param role       The role to be assigned to the user within the tour.
+     * @param authHeader The authorization token in the request header.
+     * @return A ResponseEntity containing the assigned role of the user within the tour.
      */
-    @PutMapping("/{tourId}/members/{userId}/role")
+    @PutMapping("/{userId}/role")
     public ResponseEntity<String> setTourUserRole(
             @PathVariable String tourId,
             @PathVariable String userId,
@@ -150,66 +143,32 @@ public class TourController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @DeleteMapping("/{tourId}/members/{userId}")
-    public ResponseEntity<Tour> deleteTourMember(@PathVariable String tourId, @PathVariable String userId) {
+    /**
+     * Deletes a user from the specified tour. The tour is also deleted if it was its last member.
+     *
+     * @param tourId     The ID of the tour from which the user is to be deleted.
+     * @param userId     The ID of the user to be deleted from the tour.
+     * @param authHeader The authorization token in the request header.
+     * @return A ResponseEntity containing the updated Tour object after deleting the user from the tour.
+     */
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Tour> deleteTourMember(
+            @PathVariable String tourId,
+            @PathVariable String userId,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        if (!authTokenValidator.validateToken(authHeader, tourId, List.of("major")))
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+
         if (tourService.existsTourById(tourId)) {
             Tour tour = tourService.getTourById(tourId);
             if (tour.getMembers().contains(userId)) {
                 tour.deleteMember(userId);
-                tourService.saveTour(tour);
-            }
-            return new ResponseEntity<>(tour, HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
 
-
-
-    /**
-     *
-     * Applications to join tour
-     *
-     **/
-
-    @GetMapping("/{tourId}/applications")
-    public ResponseEntity<List<TourUser>> getAllTourApplications(
-            @PathVariable String tourId,
-            @RequestHeader("Authorization") String authHeader
-    ) {
-        if (!authTokenValidator.validateToken(authHeader, tourId, List.of("guest", "major", "minor", "troop")))
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-
-        if (tourService.existsTourById(tourId)) {
-            List<String> userIds = tourService.getTourById(tourId).getApplications();
-            if (userIds != null) {
-                List<TourUser> tourUsers = userService.getAllTourUsersById(userIds, tourId);
-                return new ResponseEntity<>(tourUsers, HttpStatus.OK);
-            }
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-
-    @PutMapping("/{tourId}/applications/{userId}")
-    public ResponseEntity<Tour> createTourApplication(@PathVariable String tourId, @PathVariable String userId) {
-        if (tourService.existsTourById(tourId)) {
-            if (userService.existsUserById(userId)) {
-                Tour tour = tourService.getTourById(tourId);
-                tour.addApplication(userId);
-                tourService.saveTour(tour);
-                return new ResponseEntity<>(tour, HttpStatus.CREATED);
-            }
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-
-    @DeleteMapping("/{tourId}/applications/{userId}")
-    public ResponseEntity<Tour> deleteTourApplication(@PathVariable String tourId, @PathVariable String userId) {
-        if (tourService.existsTourById(tourId)) {
-            Tour tour = tourService.getTourById(tourId);
-            if (tour.getApplications().contains(userId)) {
-                tour.deleteApplication(userId);
-                tourService.saveTour(tour);
+                if (tour.getMembers().isEmpty())
+                    tourService.deleteTour(tour);
+                else
+                    tourService.saveTour(tour);
             }
             return new ResponseEntity<>(tour, HttpStatus.OK);
         }

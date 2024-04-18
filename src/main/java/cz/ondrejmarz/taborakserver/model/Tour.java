@@ -3,6 +3,7 @@ package cz.ondrejmarz.taborakserver.model;
 import com.google.cloud.firestore.annotation.DocumentId;
 import com.google.cloud.spring.data.firestore.Document;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -17,28 +18,23 @@ public class Tour {
     private String description;
     private Date startDate;
     private Date endDate;
-    private List<String> members;
-    private List<String> applications;
+    private List<String> members = new ArrayList<>();
+    private List<String> applications = new ArrayList<>();
+    private List<String> dailyPrograms = new ArrayList<>();
 
     public Tour() {
     }
 
-    public Tour(String tourId, String title, String topic, String description) {
-        this.tourId = tourId;
-        this.title = title;
-        this.topic = topic;
-        this.description = description;
-    }
-
-    public Tour(String tourId, String title, String topic, String description, Date startDate, Date endDate, List<String> members, List<String> applications) {
+    public Tour(String tourId, String title, String topic, String description, Date startDate, Date endDate, List<String> members, List<String> applications, List<String> dailyPrograms) {
         this.tourId = tourId;
         this.title = title;
         this.topic = topic;
         this.description = description;
         this.startDate = startDate;
         this.endDate = endDate;
-        this.members = members;
-        this.applications = applications;
+        this.members = members != null ? members : new ArrayList<>();
+        this.applications = applications != null ? applications : new ArrayList<>();
+        this.dailyPrograms = dailyPrograms != null ? dailyPrograms : new ArrayList<>();
     }
 
     public String getTourId() {
@@ -104,6 +100,22 @@ public class Tour {
     public void addApplication(String application) { applications.add(application); }
 
     public void deleteApplication(String application) { applications.remove(application); }
+
+    public List<String> getDailyPrograms() {
+        return dailyPrograms;
+    }
+
+    public void setDailyPrograms(List<String> dailyPrograms) {
+        this.dailyPrograms = dailyPrograms;
+    }
+
+    public void addDayPlan(String dayId) {
+        this.dailyPrograms.add(dayId);
+    }
+
+    public void deleteDayPlan(String dayId) {
+        this.dailyPrograms.remove(dayId);
+    }
 
     @Override
     public String toString() {
