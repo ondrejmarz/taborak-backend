@@ -1,92 +1,118 @@
 package cz.ondrejmarz.taborakserver.service;
 
-import cz.ondrejmarz.taborakserver.model.DayPlan;
-import cz.ondrejmarz.taborakserver.repository.DayPlanRepository;
+import cz.ondrejmarz.taborakserver.model.Participant;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import cz.ondrejmarz.taborakserver.model.Group;
+import cz.ondrejmarz.taborakserver.repository.GroupRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Calendar;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
-public class DayPlanService {
+public class GroupService {
 
-    private final DayPlanRepository dayPlanRepository;
+    private final GroupRepository groupRepository;
 
     @Autowired
-    public DayPlanService(DayPlanRepository dayPlanRepository) {
-        this.dayPlanRepository = dayPlanRepository;
+    public GroupService(GroupRepository groupRepository) {
+        this.groupRepository = groupRepository;
     }
 
-    public List<DayPlan> getAllDayPlans() {
-        return dayPlanRepository.findAll().collectList().block();
+    public List<Group> getAllGroups() {
+        return groupRepository.findAll().collectList().block();
     }
 
-    public DayPlan getDayPlanById(String id) {
-        return dayPlanRepository.findById(id).block();
+    public Group getGroupById(String id) {
+        return groupRepository.findById(id).block();
     }
 
-    public DayPlan saveDayPlan(DayPlan dayPlan) {
+    public List<Group> getAllByIds(List<String> groupIds) { return groupRepository.findAllById(groupIds).collectList().block(); }
 
-        return dayPlanRepository.save(dayPlan).block();
+    public Group saveGroup(Group group) {
+        return groupRepository.save(group).block();
     }
 
-    public void deleteDayPlan(DayPlan tour) {
-        dayPlanRepository.delete(tour).block();
+    public void deleteGroup(Group group) {
+        groupRepository.delete(group);
     }
 
-    public Boolean existsDayPlanById(String id) {
-        return dayPlanRepository.existsById(id).block();
+    public Boolean existsGroupById(String id) {
+        return groupRepository.existsById(id).block();
     }
 
-    public void fillActivities(DayPlan dayPlan, DayPlan exemplary) {
+    public Group createGroupWithXlsx(byte[] xlsxContent) {
 
-        exemplary.setDatesToDay(dayPlan.getWakeUp().getStartTime());
+        List<Participant> participants = new ArrayList<>();
 
-        Calendar calendar = Calendar.getInstance();
+        try {
+            InputStream inputStream = new ByteArrayInputStream(xlsxContent);
+            Workbook workbook = new XSSFWorkbook(inputStream);
+            Sheet sheet = workbook.getSheetAt(0); // Get the first sheet
 
-        calendar.setTime(dayPlan.getWakeUp().getStartTime());
-        calendar.add(Calendar.HOUR, -2);
-        dayPlan.getWakeUp().setStartTime( calendar.getTime() );
-        calendar.add(Calendar.MINUTE, 15);
-        dayPlan.getWarmUp().setStartTime( calendar.getTime() );
+            int rowNum = 1; // Skip header row
+            while (true) {
+                Row row = sheet.getRow(rowNum);
+                if (row == null || row.getCell(0) == null || Objects.equals(row.getCell(0).getStringCellValue(), "")) {
+                    break; // End of data
+                }
 
-        dayPlan.setWakeUp(    dayPlan.getWakeUp().initializeIfNeeded("Budíček", "Milník", exemplary.getWakeUp().getStartTime()) );
-        dayPlan.setWarmUp(    dayPlan.getWarmUp().initializeIfNeeded("Rozcvička", "Milník", dayPlan.getWarmUp().getStartTime()) );
+                Cell firstCell = row.getCell(0);
+                if (isNumeric(firstCell.getStringCellValue())) {
+                    rowNum++; // Skip row with a number in the first cell
+                    continue;
+                }
 
-        dayPlan.setDishBreakfast(       dayPlan.getDishBreakfast().initializeIfNeeded("Snídaně", "Jídlo", exemplary.getDishBreakfast().getStartTime()) );
-        dayPlan.setDishMorningSnack(    dayPlan.getDishMorningSnack().initializeIfNeeded("Svačina", "Jídlo", exemplary.getDishMorningSnack().getStartTime()) );
-        dayPlan.setDishLunch(           dayPlan.getDishLunch().initializeIfNeeded("Oběd", "Jídlo", exemplary.getDishLunch().getStartTime()) );
-        dayPlan.setDishAfternoonSnack(  dayPlan.getDishAfternoonSnack().initializeIfNeeded("Svačina", "Jídlo", exemplary.getDishAfternoonSnack().getStartTime()) );
-        dayPlan.setDishDinner(          dayPlan.getDishDinner().initializeIfNeeded("Večeře", "Jídlo", exemplary.getDishDinner().getStartTime()) );
-        dayPlan.setDishEveningSnack(    dayPlan.getDishEveningSnack().initializeIfNeeded("Svačina", "Jídlo", exemplary.getDishEveningSnack().getStartTime()) );
+                Participant participant = new Participant();
 
-        dayPlan.setProgramMorning(      dayPlan.getProgramMorning().initializeIfNeeded("", "Dopolední činnost", exemplary.getProgramMorning().getStartTime()) );
-        dayPlan.setProgramAfternoon(    dayPlan.getProgramAfternoon().initializeIfNeeded("", "Odpolední činnost", exemplary.getProgramAfternoon().getStartTime()) );
-        dayPlan.setProgramEvening(      dayPlan.getProgramEvening().initializeIfNeeded("", "Podvečení činnost", exemplary.getProgramEvening().getStartTime()) );
-        dayPlan.setProgramNight(        dayPlan.getProgramNight().initializeIfNeeded("", "Večerní činnost", exemplary.getProgramNight().getStartTime()) );
+                Cell name = row.getCell(1);
+                if (!name.getStringCellValue().equals(""))
+                    participant.setName(name.getStringCellValue() + " " + firstCell.getStringCellValue());
+                else {
+                    rowNum++;
+                    continue;
+                }
+                Cell ageCell = row.getCell(2);
+                if (isNumeric(ageCell.getStringCellValue())) {
+                    participant.setAge(ageCell.getStringCellValue());
+                }
+                Cell emailCell = row.getCell(3);
+                if (!emailCell.getStringCellValue().equals("")) {
+                    participant.setParentPhone(emailCell.getStringCellValue());
+                }
+                Cell phoneCell = row.getCell(4);
+                if (!phoneCell.getStringCellValue().equals("")) {
+                    participant.setParentEmail(phoneCell.getStringCellValue());
+                }
 
-        dayPlan.setSummon(              dayPlan.getSummon().initializeIfNeeded("Nástup", "Milník", exemplary.getSummon().getStartTime()) );
-        dayPlan.setPrepForNight(        dayPlan.getPrepForNight().initializeIfNeeded("Příprava na večerku", "Milník", exemplary.getPrepForNight().getStartTime()) );
-        dayPlan.setLightsOut(           dayPlan.getLightsOut().initializeIfNeeded("Večerka", "Milník", exemplary.getLightsOut().getStartTime()) );
+                participants.add(participant);
+                rowNum++;
+            }
 
-        calendar.setTime( dayPlan.getLightsOut().getStartTime() );
-        calendar.add(Calendar.HOUR, -2);
-        dayPlan.getLightsOut().setStartTime( calendar.getTime() );
-        calendar.add(Calendar.MINUTE, -15);
-        dayPlan.getPrepForNight().setStartTimeDay( calendar.getTime() );
-    }
-
-    public DayPlan findExemplaryDayPlan(List<String> exemplaryDayPlansIds) {
-        List<DayPlan> dayPlans = dayPlanRepository.findAllById(exemplaryDayPlansIds).collectList().block();
-
-        DayPlan exemplaryDayPlan = null;
-        if (dayPlans == null || dayPlans.isEmpty()) return DayPlan.getDefaultDayPlan();
-
-        for (DayPlan plan: dayPlans) {
-            if (exemplaryDayPlan == null || exemplaryDayPlan.getDay().compareTo(plan.getDay()) < 0)
-                exemplaryDayPlan = plan;
+            workbook.close();
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
         }
-        return exemplaryDayPlan;
+
+        Group newGroup = new Group();
+        newGroup.setNumber("0");
+        newGroup.setParticipants(participants);
+
+        return groupRepository.save( newGroup ).block();
+    }
+
+    private boolean isNumeric(String str) {
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }

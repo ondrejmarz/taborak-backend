@@ -17,10 +17,10 @@ public interface DayPlanRepository extends FirestoreReactiveRepository<DayPlan> 
     Mono<DayPlan> findById(String id);
 
     // Save tour
-    Mono<DayPlan> save(Tour tour);
+    Mono<DayPlan> save(DayPlan dayPlan);
 
     // Delete tour
-    Mono<DayPlan> delete(Tour tour);
+    Mono<Void> delete(DayPlan dayPlan);
 
     // Return true if tour with id exists
     Mono<Boolean> existsById(String id);

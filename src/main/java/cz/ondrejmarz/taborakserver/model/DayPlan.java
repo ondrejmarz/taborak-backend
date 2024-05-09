@@ -253,20 +253,20 @@ public class DayPlan {
         calendar.set(1970, Calendar.JANUARY, 1, 21, 0, 0);
         Activity dish6 = new Activity("Druhá večeře", "Jídlo", calendar.getTime() );
 
-        calendar.set(1970, Calendar.JANUARY, 1, 10, 0, 0);
+        calendar.set(1970, Calendar.JANUARY, 1, 8, 0, 0);
         Activity program1 = new Activity("", "Dopolední činnost", calendar.getTime() );
-        calendar.set(1970, Calendar.JANUARY, 1, 14, 30, 0);
+        calendar.set(1970, Calendar.JANUARY, 1, 12, 30, 0);
         Activity program2 = new Activity("", "Odpolední činnost", calendar.getTime() );
-        calendar.set(1970, Calendar.JANUARY, 1, 16, 30, 0);
+        calendar.set(1970, Calendar.JANUARY, 1, 14, 30, 0);
         Activity program3 = new Activity("","Podvečerní činnost", calendar.getTime() );
-        calendar.set(1970, Calendar.JANUARY, 1, 20, 0, 0);
+        calendar.set(1970, Calendar.JANUARY, 1, 18, 0, 0);
         Activity program4 = new Activity("'", "Večerní činnost", calendar.getTime() );
 
-        calendar.set(1970, Calendar.JANUARY, 1, 18, 30, 0);
+        calendar.set(1970, Calendar.JANUARY, 1, 16, 30, 0);
         Activity summon = new Activity("Nástup", "Milník", calendar.getTime() );
-        calendar.set(1970, Calendar.JANUARY, 1, 22, 15, 0);
+        calendar.set(1970, Calendar.JANUARY, 1, 20, 15, 0);
         Activity prep   = new Activity("Příprava na večerku", "Milník", calendar.getTime() );
-        calendar.set(1970, Calendar.JANUARY, 1, 22, 30, 0);
+        calendar.set(1970, Calendar.JANUARY, 1, 20, 30, 0);
         Activity lights = new Activity("Večerka", "Milník", calendar.getTime() );
 
         return new DayPlan(

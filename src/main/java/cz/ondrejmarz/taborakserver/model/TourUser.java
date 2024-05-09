@@ -64,4 +64,12 @@ public class TourUser {
     public int hashCode() {
         return Objects.hash(userId, userName, email, role);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TourUser tourUser = (TourUser) o;
+        return Objects.equals(userId, tourUser.userId) && Objects.equals(userName, tourUser.userName) && Objects.equals(email, tourUser.email) && Objects.equals(role, tourUser.role);
+    }
 }

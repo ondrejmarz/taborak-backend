@@ -35,7 +35,8 @@ public class UserService {
                     user -> {
                         String role = user.getRoles().getOrDefault(tourId, "null");
                         return new TourUser(user.getUserId(), user.getUserName(), user.getEmail(), role );
-                    } ).collect(Collectors.toList());
+                    }
+                ).collect(Collectors.toList());
         return Collections.emptyList();
     }
 

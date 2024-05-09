@@ -6,7 +6,6 @@ import com.google.firebase.auth.FirebaseToken;
 import cz.ondrejmarz.taborakserver.model.User;
 import cz.ondrejmarz.taborakserver.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -43,7 +42,7 @@ public class AuthTokenFirebaseValidator {
      */
     public boolean validateToken(String authToken, String tourId, List<String> allowedRoles) {
         try {
-            // Verifies token, if valid then return decoded token, otherwise throws exception
+            // Verifies token, if valid then returns decoded token, otherwise throws exception
             FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(authToken);
             // Fetches user from database by id
             User user = userService.getUserById(decodedToken.getUid());

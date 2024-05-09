@@ -20,12 +20,13 @@ public class Tour {
     private Date endDate;
     private List<String> members = new ArrayList<>();
     private List<String> applications = new ArrayList<>();
+    private List<String> groups = new ArrayList<>();
     private List<String> dailyPrograms = new ArrayList<>();
 
     public Tour() {
     }
 
-    public Tour(String tourId, String title, String topic, String description, Date startDate, Date endDate, List<String> members, List<String> applications, List<String> dailyPrograms) {
+    public Tour(String tourId, String title, String topic, String description, Date startDate, Date endDate, List<String> members, List<String> applications, List<String> groups, List<String> dailyPrograms) {
         this.tourId = tourId;
         this.title = title;
         this.topic = topic;
@@ -34,6 +35,7 @@ public class Tour {
         this.endDate = endDate;
         this.members = members != null ? members : new ArrayList<>();
         this.applications = applications != null ? applications : new ArrayList<>();
+        this.groups = groups != null ? groups : new ArrayList<>();
         this.dailyPrograms = dailyPrograms != null ? dailyPrograms : new ArrayList<>();
     }
 
@@ -100,6 +102,14 @@ public class Tour {
     public void addApplication(String application) { applications.add(application); }
 
     public void deleteApplication(String application) { applications.remove(application); }
+
+    public List<String> getGroups() { return groups; }
+
+    public void setGroups(List<String> groups) { this.groups = groups; }
+
+    public void addGroup(String group) { groups.add(group); }
+
+    public void deleteGroup(String group) { groups.remove(group); }
 
     public List<String> getDailyPrograms() {
         return dailyPrograms;

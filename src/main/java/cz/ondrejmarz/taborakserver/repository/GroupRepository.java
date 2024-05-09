@@ -2,26 +2,33 @@ package cz.ondrejmarz.taborakserver.repository;
 
 import com.google.cloud.spring.data.firestore.FirestoreReactiveRepository;
 import cz.ondrejmarz.taborakserver.model.DayPlan;
+import cz.ondrejmarz.taborakserver.model.Group;
 import cz.ondrejmarz.taborakserver.model.Tour;
+import cz.ondrejmarz.taborakserver.model.User;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @Repository
-public interface DayPlanRepository extends FirestoreReactiveRepository<DayPlan> {
+public interface GroupRepository extends FirestoreReactiveRepository<Group> {
 
-    // Get all existing tours
-    Flux<DayPlan> findAll();
+    // Get all existing groups
+    Flux<Group> findAll();
 
-    // Get tour by id
-    Mono<DayPlan> findById(String id);
+    // Get group by id
+    Mono<Group> findById(String id);
 
-    // Save tour
-    Mono<DayPlan> save(Tour tour);
+    // Get all existing groups by id
+    Flux<Group> findAllById(List<String> groupIds);
 
-    // Delete tour
-    Mono<DayPlan> delete(Tour tour);
+    // Save group
+    Mono<Group> save(Group group);
 
-    // Return true if tour with id exists
+    // Delete group
+    Mono<Void> delete(Group group);
+
+    // Return true if group with id exists
     Mono<Boolean> existsById(String id);
 }

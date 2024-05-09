@@ -22,14 +22,18 @@ import java.util.List;
 @RequestMapping("/tours/{tourId}/calendar")
 public class DayPlanController {
 
-    @Autowired
-    private AuthTokenFirebaseValidator authTokenValidator;
+    private final AuthTokenFirebaseValidator authTokenValidator;
+
+    private final TourService tourService;
+
+    private final DayPlanService dayPlanService;
 
     @Autowired
-    private TourService tourService;
-
-    @Autowired
-    private DayPlanService dayPlanService;
+    public DayPlanController(AuthTokenFirebaseValidator authTokenValidator, TourService tourService, DayPlanService dayPlanService) {
+        this.authTokenValidator = authTokenValidator;
+        this.tourService = tourService;
+        this.dayPlanService = dayPlanService;
+    }
 
     @GetMapping("/{day}")
     public ResponseEntity<DayPlan> getTourDayPlan(
@@ -69,7 +73,7 @@ public class DayPlanController {
         if (!authTokenValidator.validateToken(authHeader, tourId, List.of("major", "minor")))
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
-        if (tourService.existsTourById(tourId) && isDayCorrectFormat(day, tourId)) {
+        if (tourService.existsTourById(tourId)) {
 
             Tour tour = tourService.getTourById(tourId);
             List<String> dayPlanIds = tour.getDailyPrograms();
@@ -87,7 +91,7 @@ public class DayPlanController {
 
             List<String> exemplaryDayPlansIds = tour.getDailyPrograms();
             dayPlan.setDay(day);
-            dayPlanService.fillActivities(dayPlan, dayPlanService.findExemplaryDayPlan(exemplaryDayPlansIds));
+            dayPlan = dayPlanService.fillActivities(dayPlan, dayPlanService.findExemplaryDayPlan(exemplaryDayPlansIds));
             DayPlan createdDayPlan = dayPlanService.saveDayPlan(dayPlan);
 
             tour.addDayPlan(createdDayPlan.getDayId());
@@ -107,7 +111,7 @@ public class DayPlanController {
         if (!authTokenValidator.validateToken(authHeader, tourId, List.of("major", "minor")))
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
-        if (tourService.existsTourById(tourId) && isDayCorrectFormat(day, tourId)) {
+        if (tourService.existsTourById(tourId)) {
 
             Tour tour = tourService.getTourById(tourId);
             List<String> dayPlanIds = tour.getDailyPrograms();
@@ -134,7 +138,7 @@ public class DayPlanController {
         if (!authTokenValidator.validateToken(authHeader, tourId, List.of("major", "minor")))
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
-        if (tourService.existsTourById(tourId) && isDayCorrectFormat(day, tourId)) {
+        if (tourService.existsTourById(tourId)) {
 
             Tour tour = tourService.getTourById(tourId);
             List<String> dayPlanIds = tour.getDailyPrograms();
@@ -160,12 +164,11 @@ public class DayPlanController {
         try {
             Date targetDay = new SimpleDateFormat("yyyy-MM-dd").parse(day);
 
-            /*
             // Check if the target day is within the tour's start and end dates
             Tour tour = tourService.getTourById(tourId);
             if (targetDay.before(tour.getStartDate()) || targetDay.after(tour.getEndDate()))
                 return false;
-             */
+
         } catch (ParseException e) {
             return false;
         }

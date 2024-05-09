@@ -1,52 +1,45 @@
 package cz.ondrejmarz.taborakserver.controller;
 
 import cz.ondrejmarz.taborakserver.controller.token.AuthTokenFirebaseValidator;
+import cz.ondrejmarz.taborakserver.model.Group;
 import cz.ondrejmarz.taborakserver.model.Tour;
-import cz.ondrejmarz.taborakserver.model.User;
+import cz.ondrejmarz.taborakserver.service.GroupService;
 import cz.ondrejmarz.taborakserver.service.TourService;
-import cz.ondrejmarz.taborakserver.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Controller handling operations related to tours.
- * Provides endpoints for retrieving, creating, updating, and deleting tours.
+ * Controller handling operations related to groups.
+ * Provides endpoints for retrieving, creating, updating, and deleting groups.
  */
 @RestController
-@RequestMapping("/tours")
-public class TourController {
+@RequestMapping("/tours/{tourId}/groups")
+public class GroupController {
+
+    private final AuthTokenFirebaseValidator authTokenValidator;
+
+    private final GroupService groupService;
+
+    private final TourService tourService;
 
     @Autowired
-    private AuthTokenFirebaseValidator authTokenValidator;
-
-    @Autowired
-    private TourService tourService;
-
-    @Autowired
-    private UserService userService;
-
-    /**
-     * Retrieves all tours.
-     * @return ResponseEntity containing a list of tours if successful, or an empty list if no tours are found.
-     */
-    @GetMapping
-    public ResponseEntity<List<Tour>> getAllTours() {
-        List<Tour> tours = tourService.getAllTours();
-        return new ResponseEntity<>(tours, HttpStatus.OK);
+    GroupController(AuthTokenFirebaseValidator authTokenValidator, GroupService groupService, TourService tourService) {
+        this.authTokenValidator = authTokenValidator;
+        this.groupService = groupService;
+        this.tourService = tourService;
     }
 
     /**
-     * Retrieves a tour by its ID.
-     * @param tourId The ID of the tour to retrieve.
-     * @param authHeader The authorization token in the request header.
-     * @return ResponseEntity containing the requested tour if found, or an error response if not authorized or the tour is not found.
+     * Retrieves all groups from specified tour.
+     * @return ResponseEntity containing a list of groups if successful, or an empty list if no groups are found.
      */
-    @GetMapping("/{tourId}")
-    public ResponseEntity<Tour> getTourById(
+    @GetMapping
+    public ResponseEntity<List<Group>> getAllTourGroups(
             @PathVariable String tourId,
             @RequestHeader("Authorization") String authHeader
     ) {
@@ -54,68 +47,107 @@ public class TourController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
         if (tourService.existsTourById(tourId)) {
-            Tour tour = tourService.getTourById(tourId);
-            return new ResponseEntity<>(tour, HttpStatus.OK);
+            List<String> groupIds = tourService.getTourById(tourId).getGroups();
+            List<Group> groups = groupService.getAllByIds(groupIds);
+            return new ResponseEntity<>(groups, HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     /**
-     * Creates a new tour and adds user who created it as main authority.
-     * @param tour The tour to create.
-     * @return ResponseEntity containing the created tour if successful, or an error response if creation fails.
+     * Retrieves a group by its ID.
+     * @param groupId The ID of the group to retrieve.
+     * @param authHeader The authorization token in the request header.
+     * @return ResponseEntity containing the requested group if found, or an error response if not authorized or the group is not found.
      */
-    @PostMapping
-    public ResponseEntity<Tour> createTour(
-            @RequestBody Tour tour
+    @GetMapping("/{groupId}")
+    public ResponseEntity<Group> getGroupById(
+            @PathVariable String tourId,
+            @PathVariable String groupId,
+            @RequestHeader("Authorization") String authHeader
     ) {
-        Tour createdTour = tourService.saveTour(tour);
-        String creatorId = createdTour.getMembers().get(0);
-        User creator = userService.getUserById(creatorId);
-        creator.addRole(createdTour.getTourId(), "major");
-        userService.saveUser(creator);
-        return new ResponseEntity<>(createdTour, HttpStatus.CREATED);
+        if (!authTokenValidator.validateToken(authHeader, tourId, List.of("major", "minor", "troop", "guest")))
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+
+        if (groupService.existsGroupById(groupId)) {
+            Group group = groupService.getGroupById(groupId);
+            return new ResponseEntity<>(group, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     /**
-     * Updates an existing tour.
-     * @param tourId The ID of the tour to update.
-     * @param tour The updated tour data.
+     * Creates all participants with xlsx file.
+     * @param tourId The ID of the tour to create participants in.
+     * @param xlsxContent The xlsx file content.
      * @param authHeader The authorization token in the request header.
-     * @return ResponseEntity containing the updated tour if successful, or an error response if update fails.
+     * @return ResponseEntity containing the created group if successful, or an error response if update fails.
      */
-    @PutMapping("/{tourId}")
-    public ResponseEntity<Tour> updateTour(
+    @PostMapping("/createAllInXlsx")
+    public ResponseEntity<Group> createGroupWithListXlsx(
             @PathVariable String tourId,
-            @RequestBody Tour tour,
+            @RequestBody byte[] xlsxContent,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        if (!authTokenValidator.validateToken(authHeader, tourId, List.of("major", "minor")))
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+
+        if (tourService.existsTourById(tourId)) {
+            Tour tour = tourService.getTourById(tourId);
+            List<String> groupIds = tour.getGroups();
+            if (!groupIds.isEmpty()) {
+                tour.setGroups(Collections.emptyList());
+                List<Group> groupsToDelete = groupService.getAllByIds(groupIds);
+                for (Group group: groupsToDelete) groupService.deleteGroup(group);
+            }
+            Group createdGroup = groupService.createGroupWithXlsx(xlsxContent);
+            tour.addGroup(createdGroup.getGroupId());
+            tourService.saveTour(tour);
+            return new ResponseEntity<>(createdGroup, HttpStatus.CREATED);
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * Updates an existing group.
+     * @param groupId The ID of the group to update.
+     * @param group The updated group data.
+     * @param authHeader The authorization token in the request header.
+     * @return ResponseEntity containing the updated group if successful, or an error response if update fails.
+     */
+    @PutMapping("/{groupId}")
+    public ResponseEntity<Group> updateGroup(
+            @PathVariable String tourId,
+            @PathVariable String groupId,
+            @RequestBody Group group,
             @RequestHeader("Authorization") String authHeader
     ) {
         if (!authTokenValidator.validateToken(authHeader, tourId, List.of("major")))
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-
-        if (tourService.existsTourById(tourId)) {
-            Tour updatedTour = tourService.saveTour(tour);
-            return new ResponseEntity<>(updatedTour, HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(HttpStatus.I_AM_A_TEAPOT);
     }
 
     /**
-     * Deletes a tour by its ID.
-     * @param tourId The ID of the tour to delete.
+     * Deletes a group by its ID.
+     * @param groupId The ID of the group to delete.
      * @param authHeader The authorization token in the request header.
      * @return ResponseEntity with no content if deletion is successful, or an error response if deletion fails.
      */
-    @DeleteMapping("/{tourId}")
-    public ResponseEntity<Void> deleteTour(
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<Void> deleteGroup(
             @PathVariable String tourId,
+            @PathVariable String groupId,
             @RequestHeader("Authorization") String authHeader
     ) {
         if (!authTokenValidator.validateToken(authHeader, tourId, List.of("major")))
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
         if (tourService.existsTourById(tourId)) {
-            tourService.deleteTour(tourService.getTourById(tourId));
+            Tour tour = tourService.getTourById(tourId);
+            if (tour.getGroups().contains(groupId)) {
+                tour.deleteGroup(groupId);
+                tourService.saveTour(tour);
+            }
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);

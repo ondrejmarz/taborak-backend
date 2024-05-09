@@ -2,19 +2,19 @@ package cz.ondrejmarz.taborakserver.model;
 
 import java.util.Objects;
 
-public class Participants {
+public class Participant {
 
     private String name;
-    private Number age;
+    private String age;
 
     private String parentPhone;
     private String parentEmail;
 
-    Participants() {
+    public Participant() {
 
     }
 
-    public Participants(String name, Number age, String parentPhone, String parentEmail) {
+    public Participant(String name, String age, String parentPhone, String parentEmail) {
         this.name = name;
         this.age = age;
         this.parentPhone = parentPhone;
@@ -30,11 +30,11 @@ public class Participants {
         this.name = name;
     }
 
-    public Number getAge() {
+    public String getAge() {
         return age;
     }
 
-    public void setAge(Number age) {
+    public void setAge(String age) {
         this.age = age;
     }
 
@@ -58,7 +58,7 @@ public class Participants {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Participants that = (Participants) o;
+        Participant that = (Participant) o;
         return Objects.equals(name, that.name) && Objects.equals(age, that.age) && Objects.equals(parentPhone, that.parentPhone) && Objects.equals(parentEmail, that.parentEmail);
     }
 

@@ -34,19 +34,17 @@ public class DayPlanService {
     public void deleteDayPlan(DayPlan tour) {
         dayPlanRepository.delete(tour).block();
     }
-
     public Boolean existsDayPlanById(String id) {
         return dayPlanRepository.existsById(id).block();
     }
 
-    public void fillActivities(DayPlan dayPlan, DayPlan exemplary) {
+    public DayPlan fillActivities(DayPlan dayPlan, DayPlan exemplary) {
 
         exemplary.setDatesToDay(dayPlan.getWakeUp().getStartTime());
 
         Calendar calendar = Calendar.getInstance();
 
         calendar.setTime(dayPlan.getWakeUp().getStartTime());
-        calendar.add(Calendar.HOUR, -2);
         dayPlan.getWakeUp().setStartTime( calendar.getTime() );
         calendar.add(Calendar.MINUTE, 15);
         dayPlan.getWarmUp().setStartTime( calendar.getTime() );
@@ -71,10 +69,11 @@ public class DayPlanService {
         dayPlan.setLightsOut(           dayPlan.getLightsOut().initializeIfNeeded("Večerka", "Milník", exemplary.getLightsOut().getStartTime()) );
 
         calendar.setTime( dayPlan.getLightsOut().getStartTime() );
-        calendar.add(Calendar.HOUR, -2);
         dayPlan.getLightsOut().setStartTime( calendar.getTime() );
         calendar.add(Calendar.MINUTE, -15);
         dayPlan.getPrepForNight().setStartTimeDay( calendar.getTime() );
+
+        return dayPlan;
     }
 
     public DayPlan findExemplaryDayPlan(List<String> exemplaryDayPlansIds) {

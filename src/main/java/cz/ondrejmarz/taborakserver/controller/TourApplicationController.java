@@ -21,14 +21,18 @@ import java.util.List;
 @RequestMapping("/tours/{tourId}/applications")
 public class TourApplicationController {
 
-    @Autowired
-    private AuthTokenFirebaseValidator authTokenValidator;
+    private final AuthTokenFirebaseValidator authTokenValidator;
+
+    private final TourService tourService;
+
+    private final UserService userService;
 
     @Autowired
-    private TourService tourService;
-
-    @Autowired
-    private UserService userService;
+    public TourApplicationController(AuthTokenFirebaseValidator authTokenValidator, TourService tourService, UserService userService) {
+        this.authTokenValidator = authTokenValidator;
+        this.tourService = tourService;
+        this.userService = userService;
+    }
 
     /**
      * Retrieves all tour applications associated with the specified tour ID.
@@ -47,7 +51,7 @@ public class TourApplicationController {
 
         if (tourService.existsTourById(tourId)) {
             List<String> userIds = tourService.getTourById(tourId).getApplications();
-            if (userIds != null) {
+            if (!userIds.isEmpty()) {
                 List<TourUser> tourUsers = userService.getAllTourUsersById(userIds, tourId);
                 return new ResponseEntity<>(tourUsers, HttpStatus.OK);
             }

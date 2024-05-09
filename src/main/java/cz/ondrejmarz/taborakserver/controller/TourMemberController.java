@@ -23,14 +23,18 @@ import java.util.Objects;
 @RequestMapping("/tours/{tourId}/members")
 public class TourMemberController {
 
-    @Autowired
-    private AuthTokenFirebaseValidator authTokenValidator;
+    private final AuthTokenFirebaseValidator authTokenValidator;
+
+    private final TourService tourService;
+
+    private final UserService userService;
 
     @Autowired
-    private TourService tourService;
-
-    @Autowired
-    private UserService userService;
+    public TourMemberController(AuthTokenFirebaseValidator authTokenValidator, TourService tourService, UserService userService ) {
+        this.authTokenValidator = authTokenValidator;
+        this.tourService = tourService;
+        this.userService = userService;
+    }
 
     /**
      * Retrieves all members of the specified tour.
@@ -49,7 +53,7 @@ public class TourMemberController {
 
         if (tourService.existsTourById(tourId)) {
             List<String> userIds = tourService.getTourById(tourId).getMembers();
-            if (userIds != null) {
+            if (!userIds.isEmpty()) {
                 List<TourUser> tourUsers = userService.getAllTourUsersById(userIds, tourId);
                 return new ResponseEntity<>(tourUsers, HttpStatus.OK);
             }
@@ -77,7 +81,7 @@ public class TourMemberController {
         if (tourService.existsTourById(tourId)) {
             if (userService.existsUserById(userId)) {
                 String userTourRole =
-                        userService.getUserById(userId).getRoles().get(tourId) == null ?
+                        userService.getUserById(userId).getRoles().get(tourId) != null ?
                         userService.getUserById(userId).getRoles().get(tourId) : "null";
                 return new ResponseEntity<>(userTourRole, HttpStatus.OK);
             }

@@ -63,9 +63,9 @@ class TourMemberControllerTest {
 
     @Test
     void getAllTourMembers() throws Exception {
-        String tourId = "1";
+        String tourId = "ID1";
         List<TourUser> tourUsers = Arrays.asList(new TourUser("userID1", "name1", "email1", "major"), new TourUser("userID2", "name2", "email2", "minor"));
-        Tour tour = new Tour("ID1", "Title1", "Topic1", "Description1", new Date(), new Date(), List.of("userID1", "userID2"), null, null, null);
+        Tour tour = new Tour(tourId, "Title1", "Topic1", "Description1", new Date(), new Date(), List.of("userID1", "userID2"), null, null, null);
 
         when(authTokenValidator.validateToken(anyString(), eq(tourId), anyList())).thenReturn(true);
         when(tourService.existsTourById(tourId)).thenReturn(true);

@@ -1,6 +1,8 @@
 package cz.ondrejmarz.taborakserver.service;
 
 import cz.ondrejmarz.taborakserver.model.Tour;
+import cz.ondrejmarz.taborakserver.repository.DayPlanRepository;
+import cz.ondrejmarz.taborakserver.repository.GroupRepository;
 import cz.ondrejmarz.taborakserver.repository.TourRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,9 +14,15 @@ public class TourService {
 
     private final TourRepository tourRepository;
 
+    private final DayPlanRepository dayPlanRepository;
+
+    private final GroupRepository groupRepository;
+
     @Autowired
-    public TourService(TourRepository tourRepository) {
+    public TourService(TourRepository tourRepository, DayPlanRepository dayPlanRepository, GroupRepository groupRepository) {
         this.tourRepository = tourRepository;
+        this.dayPlanRepository = dayPlanRepository;
+        this.groupRepository = groupRepository;
     }
 
     public List<Tour> getAllTours() {
@@ -30,6 +38,8 @@ public class TourService {
     }
 
     public void deleteTour(Tour tour) {
+        groupRepository.deleteAllById(tour.getGroups()).block();
+        dayPlanRepository.deleteAllById(tour.getDailyPrograms()).block();
         tourRepository.delete(tour).block();
     }
 

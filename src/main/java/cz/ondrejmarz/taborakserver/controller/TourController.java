@@ -3,6 +3,8 @@ package cz.ondrejmarz.taborakserver.controller;
 import cz.ondrejmarz.taborakserver.controller.token.AuthTokenFirebaseValidator;
 import cz.ondrejmarz.taborakserver.model.Tour;
 import cz.ondrejmarz.taborakserver.model.User;
+import cz.ondrejmarz.taborakserver.service.DayPlanService;
+import cz.ondrejmarz.taborakserver.service.GroupService;
 import cz.ondrejmarz.taborakserver.service.TourService;
 import cz.ondrejmarz.taborakserver.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,14 +22,18 @@ import java.util.List;
 @RequestMapping("/tours")
 public class TourController {
 
-    @Autowired
-    private AuthTokenFirebaseValidator authTokenValidator;
+    private final AuthTokenFirebaseValidator authTokenValidator;
+
+    private final TourService tourService;
+
+    private final UserService userService;
 
     @Autowired
-    private TourService tourService;
-
-    @Autowired
-    private UserService userService;
+    public TourController(AuthTokenFirebaseValidator authTokenValidator, TourService tourService, UserService userService) {
+        this.authTokenValidator = authTokenValidator;
+        this.tourService = tourService;
+        this.userService = userService;
+    }
 
     /**
      * Retrieves all tours.
@@ -70,10 +76,14 @@ public class TourController {
             @RequestBody Tour tour
     ) {
         Tour createdTour = tourService.saveTour(tour);
-        String creatorId = createdTour.getMembers().get(0);
-        User creator = userService.getUserById(creatorId);
-        creator.addRole(createdTour.getTourId(), "major");
-        userService.saveUser(creator);
+        try {
+            String creatorId = createdTour.getMembers().get(0);
+            User creator = userService.getUserById(creatorId);
+            creator.addRole(createdTour.getTourId(), "major");
+            userService.saveUser(creator);
+        } catch (Exception e) {
+            return new ResponseEntity<>(createdTour, HttpStatus.PRECONDITION_FAILED);
+        }
         return new ResponseEntity<>(createdTour, HttpStatus.CREATED);
     }
 
